@@ -2,7 +2,6 @@ library(tidyverse)
 library(stringr)
 library(foreach)
 library(gridExtra)
-library(coin)
 library(future)
 library(furrr)
 #Load data
