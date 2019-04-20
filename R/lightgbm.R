@@ -36,7 +36,7 @@ lgb_cv <- lgb.cv(params,
                  data = dtrain,
                  nrounds=10000,
                  nfold = 10,
-                 early_stopping_rounds = 100,
+                 early_stopping_rounds = 200,
                  eval_freq=10,
                  seed=1234)
 
