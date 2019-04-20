@@ -3,25 +3,23 @@ library(fastDummies)
 library(glmnet)
 library(Matrix)
 
-train <- read_rds('results/new_train.rds')
-test <- read_rds('results/new_test.rds')
+train <- read_rds('results/train_new.rds')
+test <- read_rds('results/test_new.rds')
 submission <-read_csv('data/sample_submission.csv')
-x <- train[,3:ncol(train)] %>% mutate(clust_4 = as.factor(clust_4))
-y <- train$target
 
-dummy_x <- dummy_columns(x) %>% mutate_if(is.integer, as.numeric) %>% select(-clust_4)
+x_train <- train %>% select(-id, -target) 
+y_train <- train$target
 
-x_test <- test[,3:ncol(test)] %>% mutate(clust_4 = as.factor(clust_4))
+x_test <- test %>% select(-id)
 
-dummy_test <- dummy_columns(x_test) %>% mutate_if(is.integer, as.numeric) %>% select(-clust_4)
 
-x_matrix <- Matrix(as.matrix(dummy_x), sparse = TRUE)
-x_test_matrix <- Matrix(as.matrix(dummy_test), sparse = TRUE)
+x_train_matrix <- Matrix(as.matrix(x_train), sparse = TRUE)
+x_test_matrix <- Matrix(as.matrix(x_test), sparse = TRUE)
 
-set.seed(1234)
+set.seed(123456)
 
-glmnet_model_lasso <- cv.glmnet(x = x_matrix,
-                          y = as.factor(y),
+glmnet_model_lasso <- cv.glmnet(x = x_train_matrix,
+                          y = as.factor(y_train),
                           alpha = 1,
                           family = 'binomial',
                           type.measure = 'auc')
