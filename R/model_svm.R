@@ -2,6 +2,7 @@ library(tidyverse)
 library(e1071)
 library(Matrix)
 library(caret)
+library(foreach)
 library(MLmetrics)
 library(future)
 library(furrr)
@@ -90,7 +91,7 @@ model_svm <- svm(x = x_train_matrix, y = as.factor(y_train),
                  probability = TRUE)
 
 #make prediction
-y_pred_test <- predict(temp_svm_model, x_test_matrix, probability = TRUE)
+y_pred_test <- predict(model_svm, x_test_matrix, probability = TRUE)
 y_pred_test <- attr(y_pred_test, "probabilities")[,"1"]
 
 #look at summary of predictions
