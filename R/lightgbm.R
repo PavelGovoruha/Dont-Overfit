@@ -28,7 +28,6 @@ params <- list(objective = "binary",
                bagging_fraction = 0.3,
                min_data_in_leaf = 10,
                min_sum_hessian_in_leaf = 0.1,
-               max_bin = 10,
                lambda_l1 = 0.0001,
                lambda_l2 = 0.001,
                verbosity = 1)
@@ -50,4 +49,36 @@ lgb_cv$best_score
 #best iteration
 lgb_cv$best_iter
 
+#train light gbm
+best_iter <- lgb_cv$best_iter
 
+set.seed(1234)
+lgb_model <- lgb.train(params = params, data = dtrain, nrounds = best_iter, eval_freq = 10,
+                       seed = 1234)
+
+#feature importances
+importances_ <- lgb.importance(lgb_model)
+importances_
+
+p <- importances_ %>%
+  ggplot(aes(x = reorder(Feature,Gain), y = Gain, fill = Gain)) +
+  geom_col() +
+  coord_flip()
+p
+ggsave(filename = 'plots/lightgbm_feature_importances.jpeg',
+       plot = p,
+       device = 'jpeg')
+
+#make prediction
+pred_test <- predict(lgb_model, x_test)
+pred_test
+
+qplot(x = pred_test, geom = 'density')
+length(pred_test)
+
+summary(pred_test)
+prop.table(table(as.numeric(pred_test > 0.64)))
+
+#save prediction
+submission$target <- pred_test
+write_csv(submission, 'results/lgb_model.csv')
