@@ -29,9 +29,13 @@ params <- list(objective = "binary",
                min_data_in_leaf = 10,
                min_sum_hessian_in_leaf = 1e-3,
                lambda_l1 = 0.0001,
-               lambda_l2 = 0.0001,
+               lambda_l2 = 0.001,
                verbosity = 1)
+
+#set random seed
 set.seed(1234)
+
+#cross validation
 lgb_cv <- lgb.cv(params,
                  data = dtrain,
                  nrounds=10000,
@@ -39,8 +43,10 @@ lgb_cv <- lgb.cv(params,
                  early_stopping_rounds = 200,
                  eval_freq=10,
                  seed=1234)
-
+#best_score
 lgb_cv$best_score
+
+#best iteration
 lgb_cv$best_iter
 
 
