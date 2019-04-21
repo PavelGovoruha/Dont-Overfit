@@ -25,11 +25,11 @@ params <- list(objective = "binary",
                max_depth = 6,
                feature_fraction = 0.3,
                bagging_freq = 5,
-               bagging_fraction = 0.3,
+               bagging_fraction = 1,
                min_data_in_leaf = 10,
                min_sum_hessian_in_leaf = 0.1,
-               lambda_l1 = 0.0001,
-               lambda_l2 = 0.001,
+               lambda_l1 = 1,
+               lambda_l2 = 1,
                verbosity = 1)
 
 #set random seed
@@ -81,4 +81,4 @@ prop.table(table(as.numeric(pred_test > 0.64)))
 
 #save prediction
 submission$target <- pred_test
-write_csv(submission, 'results/lgb_model.csv')
+write_csv(submission, 'results/lgb_model3.csv')
