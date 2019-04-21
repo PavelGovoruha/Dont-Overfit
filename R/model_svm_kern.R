@@ -20,36 +20,32 @@ set.seed(1234)
 
 #Create folds
 #Define folds
-folds <- createFolds(y = as.factor(y_train), k = 10, list = TRUE)
+folds <- createFolds(y = as.factor(y_train), k = 5, list = TRUE)
 folds
 
 #Set parameters to tune ksvm
 rbfdot <- 'rbfdot'
-C_ <- 10^(-5:5)
-sigma_ <- 10^(-5:-1)
+C_ <- seq(from = 100, to = 250, by = 10)
 
 #Tuning svm parameters
 plan(multiprocess)
 time1 <- Sys.time()
-result_tuning <- foreach(j = 1:10, .combine = bind_rows) %dopar% {
+result_tuning <- foreach(j = 1:5, .combine = bind_rows) %dopar% {
     cost_res <- foreach(co = C_, .combine = bind_rows) %dopar% {
-      gamma_res <- foreach(si = sigma_, .combine = bind_rows) %dopar% {
         x_train_temp <- as.matrix(x_train[-folds[[j]],])
         y_train_temp <- y_train[-folds[[j]]]
         x_test_temp <- as.matrix(x_train[folds[[j]],])
         y_test_temp <- y_train[folds[[j]]]
         
         temp_svm_model <- ksvm(x = x_train_temp, y = as.factor(y_train_temp),
-                              kernel = rbfdot, C = co, kpar = list(sigma = si), 
-                              class.weights = c("0" = 0.36, "1" = 0.64), 
+                              kernel = rbfdot, C = co, 
+                              class.weights = c("0" = 36, "1" = 64), 
                               prob.model = TRUE,
                               scale = TRUE)
         y_pred_temp <- predict(temp_svm_model, x_test_temp, type = 'probabilities')
         y_pred_temp <- y_pred_temp[,2]
         auc_score <- AUC(y_pred = y_pred_temp, y_true = y_test_temp) 
-        data.frame(fold = j, kernel = rbfdot, C = co, sigma = si, auc_score = auc_score)
-      }
-      gamma_res
+        data.frame(fold = j, kernel = rbfdot, C = co, auc_score = auc_score)
     }
     cost_res
 }
@@ -57,7 +53,7 @@ Sys.time() - time1
 
 head(result_tuning)
 result_tuning_average <- result_tuning %>%
-  group_by(kernel, C, sigma) %>%
+  group_by(kernel, C) %>%
   summarise(mean_auc_score = mean(auc_score),
             sd_auc_score = sd(auc_score)) %>% 
   arrange(desc(mean_auc_score))
@@ -67,18 +63,13 @@ p <- ggplot(result_tuning_average, aes(x = C, y = mean_auc_score, color = kernel
   geom_line()
 p
 
-p <- ggplot(result_tuning_average, aes(x = sigma, y = mean_auc_score, color = kernel)) +
-  geom_point() +
-  geom_line()
-p
-
 head(result_tuning_average)
 tail(result_tuning_average)
 
 #Set selected parameters
 kernel <- rbfdot
-C_ <- 10000
-sigma_ <- 0.00001
+C_ <- 100
+
 
 #train ksvm
 #create train and test matrix
@@ -86,8 +77,8 @@ x_train_matrix <- as.matrix(x_train)
 x_test_matrix <- as.matrix(x_test)
 
 ksvm_model <- ksvm(x = x_train_matrix, y = as.factor(y_train),
-                      kernel = rbfdot, C = C_, kpar = list(sigma = sigma_), 
-                      class.weights = c("0" = 0.36, "1" = 0.64), 
+                      kernel = rbfdot, C = C_, 
+                      class.weights = c("0" = 36, "1" = 64), 
                       prob.model = TRUE,
                       scale = TRUE)
 y_pred_test <- predict(ksvm_model, x_test_matrix, type = 'probabilities')
