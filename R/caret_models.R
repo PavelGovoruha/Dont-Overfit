@@ -50,3 +50,4 @@ submission$target <- pred_test_prob$Y
 write_csv(submission, 'results/caret_cforest.csv')
 
 
+#glmnet boot ROC: 0.7574331, cforest boot ROC: 0.7134685
