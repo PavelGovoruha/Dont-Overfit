@@ -6,6 +6,7 @@ library(gridExtra)
 library(future)
 library(corrplot)
 library(furrr)
+
 #Load data
 train <- read_csv('data/train.csv')
 test <- read_csv('data/test.csv')
@@ -239,40 +240,3 @@ p <- data.frame(iqr_ = iqr_, target = train$target) %>%
   ggtitle('Distribution of IQR per row')
 p
 ggsave(filename = 'plots/iqr_.jpeg', plot = p, device = 'jpeg')
-
-#Let's create function to add some new variables
-
-#' Add features
-#'
-#' @param data - data.frame to transform 
-#' @param sel_vars - names of previously selected variables
-#' @param skip_cols - cols which will be skipped during transformation
-#'
-#' @return - transformed data.frame
-add_features <- function(data, sel_vars, skip_cols){
-  data$mean_ <- apply(data[,-skip_cols], 1, mean)
-  data$sd_ <- apply(data[,-skip_cols], 1, sd)
-  data$kurtosis_ <- apply(data[,-skip_cols], 1, kurtosis)
-  data$skewness_ <- apply(data[,-skip_cols], 1, skewness)
-  data$min_ <- apply(data[,-skip_cols], 1, min)
-  data$max_ <- apply(data[,-skip_cols], 1, max)
-  data$pos_ratio_ <- apply(data[,-skip_cols], 1, function(x){return(mean(x > 0))})
-  data$iqr_ <- apply(data[,-skip_cols], 1, IQR)
-  data_transformed <- data %>%
-    select(sel_vars, skip_cols, mean_, sd_, kurtosis_, skewness_,
-           min_, max_, pos_ratio_, iqr_)
-  return(data_transformed)
-}
-
-#Let's transform train and test datasets
-train_new <- add_features(data = train, sel_vars = selected_vars, 
-                          skip_cols = c(1, 2))
-test_new <- add_features(data = test, sel_vars = selected_vars,
-                         skip_cols = 1)
-#Take a look at new data
-glimpse(train_new)
-glimpse(test_new)
-
-#Save new train and test sets
-write_rds(train_new, 'results/train_new.rds')
-write_rds(test_new, 'results/test_new.rds')
