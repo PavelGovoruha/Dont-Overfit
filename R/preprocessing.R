@@ -8,8 +8,9 @@ train <- read_csv('data/train.csv')
 test <- read_csv('data/test.csv')
 
 train$target <- ifelse(train$target == 0, 'N', 'Y')
+
 #Rename variables
-new_names <- foreach(j = names(train)[3:ncol(train)], .combine = c) %dor% {
+new_names <- foreach(j = names(train)[3:ncol(train)], .combine = c) %dopar% {
   str_c("v", as.character(j), "")
 }
 
@@ -90,11 +91,19 @@ test[,2:ncol(test)] <- test_scaled
 train %>% select(id, target, selected_by_rf) %>% write_rds('data/train_sel_rf.rds')
 test %>% select(id, selected_by_rf) %>% write_rds('data/test_sel_rf.rds')
 
-#Save selected with nbFuncs
-train %>% select(id, target, selected_by_nb) %>% write_rds('data/train_sel_nb.rds')
-test %>% select(id, selected_by_nb) %>% write_rds('data/test_sel_nb.rds')
+#Apply sigmoid transformation
 
-#Save all selected variablse
-selected_all_vars <- unique(union_all(selected_by_rf, selected_by_nb))
-train %>% select(id, target, selected_all_vars) %>% write_rds('data/train_sel_all.rds')
-test %>% select(id, selected_all_vars) %>% write_rds('data/test_sel_all.rds')
+#' Sigmoid 
+#'
+#' @param x - numeric number 
+#'
+#' @return sigmoid of x
+sigmoid <- function(x){
+  return(1/(1+exp(-x)))
+}
+
+#Save sigmoid transformef variables
+train %>% select(id, target, selected_by_rf) %>% mutate_at(selected_by_rf, sigmoid) %>% 
+  write_rds('data/train_sel_by_rf_sigm.rds')
+test %>% select(id, selected_by_rf) %>% mutate_at(selected_by_rf, sigmoid) %>%
+  write_rds('data/test_sel_by_rf_sigm.rds')

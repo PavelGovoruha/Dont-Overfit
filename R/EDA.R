@@ -236,7 +236,16 @@ iqr_ <- apply(train[,3:ncol(train)], 1, IQR)
 
 p <- data.frame(iqr_ = iqr_, target = train$target) %>%
   ggplot() +
-  geom_density(aes(x = iqr_, color = factor(target))) +
+  geom_density(aes(x = iqr_, color = factor(target)))
+                                            
   ggtitle('Distribution of IQR per row')
 p
 ggsave(filename = 'plots/iqr_.jpeg', plot = p, device = 'jpeg')
+
+#Plot variable v33 vs v65 in polar coordinat system
+
+p <- ggplot(train, aes(x = v65 + v33, y = v117 + v217 + v91, color = factor(target))) +
+  geom_point()
+p
+
+ggsave(filename = 'plots/some_var_comb.jpeg', plot = p, device = 'jpeg')
