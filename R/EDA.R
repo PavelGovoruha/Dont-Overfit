@@ -247,5 +247,4 @@ ggsave(filename = 'plots/iqr_.jpeg', plot = p, device = 'jpeg')
 p <- ggplot(train, aes(x = v65 + v33, y = v117 + v217 + v91, color = factor(target))) +
   geom_point()
 p
-
 ggsave(filename = 'plots/some_var_comb.jpeg', plot = p, device = 'jpeg')
