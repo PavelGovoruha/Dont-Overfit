@@ -1,3 +1,4 @@
+#load libraries
 library(tidyverse)
 library(stringr)
 library(foreach)
@@ -242,7 +243,7 @@ p <- data.frame(iqr_ = iqr_, target = train$target) %>%
 p
 ggsave(filename = 'plots/iqr_.jpeg', plot = p, device = 'jpeg')
 
-#Plot variable v33 vs v65 in polar coordinat system
+#Plot variable v65 + v33 and v117 + v217 + v91
 
 p <- ggplot(train, aes(x = v65 + v33, y = v117 + v217 + v91, color = factor(target))) +
   geom_point()
