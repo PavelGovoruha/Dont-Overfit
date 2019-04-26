@@ -80,44 +80,15 @@ getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
 getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
-#Selected variables with Boruta v117, v189, v217, v33, v65
+#Scale data
+scaled_train <- scale(train[,-c(1,2)])
+scaled_test <- scale(test[,-1])
 
-#' Add Features
-#'
-#' Add mean, max, min and others statistics per row
-#'
-#' @param data - data.frame
-#' @param skip_cols - columns which not used
-#'
-#' @return - add to data.frame min, max, mean, ... to data.frame
-add_features <- function(data, skip_cols)
-{
-  data$mean_ <- apply(data[,-skip_cols], 1, mean)
-  data$median_ <- apply(data[,-skip_cols], 1, median)
-  data$min_ <- apply(data[,-skip_cols], 1, min)
-  data$max_ <- apply(data[,-skip_cols], 1, max)
-  data$sd_ <- apply(data[,-skip_cols], 1, sd)
-  data$skewness_ <- apply(data[,-skip_cols], 1, skewness)
-  data$kurtosis_ <- apply(data[,-skip_cols], 1, kurtosis)
-  data$iqr_ <- apply(data[,-skip_cols], 1, IQR)
-  
-  return(data)
-}
-
-#Add some statistics per row
-train <- add_features(data = train, skip_cols = c(1,2))
-test <- add_features(data = test, skip_cols = 1)
-
-#Scale train and test sets
-train_scaled <- scale(train[,3:ncol(train)])
-test_scaled <- scale(test[,2:ncol(test)])
-
-train[,3:ncol(train)] <- train_scaled
-test[,2:ncol(test)] <- test_scaled
+train[,-c(1,2)] <- scaled_train
+test[,-1] <- scaled_test
 
 #Create list of selected predictors
-variables <- c("v33", "v65", "v117", "v217", "v91", "v189", "v116", "v214", "v295",
-               "v17", "v39", "mean_", "median_", "min_", "max_", "skewness_", "kurtosis_", "iqr_")
+variables <- c('v33', 'v65', 'v117', 'v217', 'v91')
 variables
 
 #Save selected with rfFuncs
@@ -127,3 +98,4 @@ test_new <- test %>% select(id, variables)
 #Save new train and test datasets
 write_rds(train_new, 'data/train_new.rds')
 write_rds(test_new, 'data/test_new.rds')
+
