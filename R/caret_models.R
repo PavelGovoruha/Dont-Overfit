@@ -42,7 +42,7 @@ p1 <- qplot(pred_test_prob$Y, geom = 'density') +
 p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
 
 p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'results/glmnet_predict.jpeg', plot = p, device = 'jpeg')
+ggsave(filename = 'plots/glmnet_predict.jpeg', plot = p, device = 'jpeg')
 
 submission$target <- pred_test_prob$Y
 
@@ -69,7 +69,7 @@ p1 <- qplot(pred_test_prob$Y, geom = 'density') +
 p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
 
 p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'results/rsvm_predict.jpeg', plot = p, device = 'jpeg')
+ggsave(filename = 'plots/rsvm_predict.jpeg', plot = p, device = 'jpeg')
 
 submission$target <- pred_test_prob$Y
 
@@ -98,7 +98,7 @@ p1 <- qplot(pred_test_prob$Y, geom = 'density') +
 p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
 
 p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'results/lsvm_predict.jpeg', plot = p, device = 'jpeg')
+ggsave(filename = 'plots/lsvm_predict.jpeg', plot = p, device = 'jpeg')
 
 submission$target <- pred_test_prob$Y
 
