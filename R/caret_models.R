@@ -17,7 +17,6 @@ control <- trainControl(method = 'boot', number = 100, savePredictions = 'final'
                         classProbs = TRUE, summaryFunction = twoClassSummary, 
                         returnResamp = 'final', allowParallel = TRUE)
 
-
 #glmnet model
 tune_glm <- expand.grid(lambda = seq(from = 0, to = 1, by = 0.01), alpha = 0)
 
