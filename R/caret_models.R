@@ -19,7 +19,7 @@ control <- trainControl(method = 'boot', number = 100, savePredictions = 'final'
 
 
 #glmnet model
-tune_glm <- expand.grid(lambda = seq(from = 0, to = 0.4, by = 0.01), alpha = c(0,1))
+tune_glm <- expand.grid(lambda = seq(from = 0, to = 1, by = 0.01), alpha = 0)
 
 plan(multiprocess)
 time1 <- Sys.time()
@@ -29,9 +29,10 @@ Sys.time() - time1
 
 glmnet_model
 plot(glmnet_model)
+glmnet_model$bestTune
+glmnet_model$results$ROC[9]
 
-
-#glmnet local auc score: 0.8378
+#glmnet local auc score: 0.8757
 
 #Making prediction with glmnet model
 pred_test_prob <- predict(glmnet_model, test[,-1], type = 'prob')
@@ -49,19 +50,16 @@ submission$target <- pred_test_prob$Y
 write_csv(submission, 'results/caret_glm.csv')
 
 #Radial SVM
-rsvm_tune <- expand.grid(sigma = 0.0536047, 
-                         C = seq(from = 0, to = 1, by = 0.1), 
-                         Weight = 1)
-
 plan(multiprocess)
 time1 <- Sys.time()
 rsvm_model <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC', data = train[,-1],
-                    trControl = control, tuneGrid = rsvm_tune)
+                    trControl = control, tuneLength = 10)
 Sys.time() - time1
 rsvm_model
 plot(rsvm_model)
-
-#Radial SVM local auc score: 0.8415
+rsvm_model$bestTune
+rsvm_model$results$ROC[31]
+#Radial SVM local auc score: 0.8888
 
 #Predicting with Radial SVM
 pred_test_prob <- predict(rsvm_model, test[,-1], type = 'prob')
@@ -78,18 +76,19 @@ submission$target <- pred_test_prob$Y
 
 write_csv(submission, 'results/caret_rsvm.csv')
 
-#Linear SVM
-lsvm_tune <- expand.grid(cost = seq(from = 0, to = 1, by = 0.05), weight = 1)
+#Linear SVM 0.
+lsvm_tune <- expand.grid(cost=seq(0,1,by=0.05),weight=seq(0,1,by=0.1))
 
 plan(multiprocess)
 time1 <- Sys.time()
-lsvm_model <- train(target ~., method = 'svmLinearWeights', metric = 'ROC', data = train[,-1],
+lsvm_model <- train(target ~ ., method = 'svmLinearWeights', metric = 'ROC', data = train[,-1],
                    trControl = control, tuneGrid = lsvm_tune)
 Sys.time() - time1
 lsvm_model
 plot(lsvm_model)
-
-#Linear SVM local auc score : 0.8329
+lsvm_model$bestTune
+lsvm_model$results$ROC[169]
+#Linear SVM local auc score : 0.8791
 
 #Predicting with Linear SVM
 pred_test_prob <- predict(lsvm_model, test[,-1], type = 'prob')
@@ -104,4 +103,4 @@ ggsave(filename = 'results/lsvm_predict.jpeg', plot = p, device = 'jpeg')
 
 submission$target <- pred_test_prob$Y
 
-write_csv(submission, 'results/caret_lsvm_new_new.csv')
+write_csv(submission, 'results/caret_lsvm.csv')

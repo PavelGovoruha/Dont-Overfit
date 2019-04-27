@@ -1,3 +1,4 @@
+#Load libraries
 library(tidyverse)
 library(moments)
 library(foreach)
@@ -34,15 +35,16 @@ ctrl_rfFuncs <- rfeControl(functions = rfFuncs ,
                    saveDetails = TRUE)
 rfFuncs$summary <- twoClassSummary
 
+plan(multiprocess)
 time1 <- Sys.time()
 vars_rf <- rfe(x = train[,-c(1,2)], y = train$target, metric = 'ROC',
-               rfeControl = ctrl_rfFuncs, sizes = 4:15)
+               rfeControl = ctrl_rfFuncs)
 Sys.time() - time1
 
 print(vars_rf)
-plot(vars_rf, type = 'l')
-
-#Varibles selected by rfe, rfFuncs are v33, v65, v117, v217, v91
+plot(vars_rf)
+rfe_rf_selection <- predictors(vars_rf)
+rfe_rf_selection
 
 #Select features by nbFuncs
 ctrl_nb<- rfeControl(
@@ -57,15 +59,14 @@ ctrl_nb<- rfeControl(
 )
 nbFuncs$summary <- twoClassSummary
 
+plan(multiprocess)
 time1 <- Sys.time()
 vars_nb <- rfe(x = train[,-c(1,2)], y = train$target, metric = 'ROC',
-               rfeControl = ctrl_nb, sizes = 4:15)
+               rfeControl = ctrl_nb)
 Sys.time() - time1
 
 vars_nb
 plot(vars_nb)
-
-#Variables selected by nbFuncs v33, v65, v217, v117
 
 #Use Boruta to select variables
 time1 <- Sys.time()
@@ -78,7 +79,13 @@ plot(boruta_selection)
 
 getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
-getSelectedAttributes(boruta_selection, withTentative = TRUE)
+getSelectedAttributes(boruta_selection, withTentative = FALSE)
+
+boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = TRUE)
+
+#Add mean per row
+train$mean_ <- apply(train[,-c(1,2)], 1, mean)
+test$mean_ <- apply(test[,-1], 1, mean)
 
 #Scale data
 scaled_train <- scale(train[,-c(1,2)])
@@ -88,10 +95,11 @@ train[,-c(1,2)] <- scaled_train
 test[,-1] <- scaled_test
 
 #Create list of selected predictors
-variables <- c('v33', 'v65', 'v117', 'v217', 'v91')
+variables <- unique(c(rfe_rf_selection, boruta_selection, 'mean_'))
+
 variables
 
-#Save selected with rfFuncs
+#Save selected variables
 train_new <- train %>% select(id, target, variables)
 test_new <- test %>% select(id, variables)
 
