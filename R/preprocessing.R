@@ -81,7 +81,7 @@ getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
 getSelectedAttributes(boruta_selection, withTentative = FALSE)
 
-boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = TRUE)
+boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = FALSE)
 
 #Add mean per row
 train$mean_ <- apply(train[,-c(1,2)], 1, mean)
@@ -95,7 +95,9 @@ train[,-c(1,2)] <- scaled_train
 test[,-1] <- scaled_test
 
 #Create list of selected predictors
-variables <- unique(c(rfe_rf_selection, boruta_selection, 'mean_'))
+variables <- c("mean_","v33",  "v65",  "v117", "v217",  
+               "v39", "v91",  "v295", "v189", "v16","v228","v268","v73",
+               "v237","v199","v201")
 
 variables
 
@@ -106,4 +108,3 @@ test_new <- test %>% select(id, variables)
 #Save new train and test datasets
 write_rds(train_new, 'data/train_new.rds')
 write_rds(test_new, 'data/test_new.rds')
-

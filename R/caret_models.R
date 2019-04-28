@@ -13,7 +13,7 @@ submission <- read_csv('data/sample_submission.csv')
 set.seed(1234)
 
 #Set control parameters for caret training process
-control <- trainControl(method = 'boot', number = 100, savePredictions = 'final',
+control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
                         classProbs = TRUE, summaryFunction = twoClassSummary, 
                         returnResamp = 'final', allowParallel = TRUE)
 
@@ -29,9 +29,9 @@ Sys.time() - time1
 glmnet_model
 plot(glmnet_model)
 glmnet_model$bestTune
-glmnet_model$results$ROC[9]
+glmnet_model$results$ROC[6]
 
-#glmnet local auc score: 0.8757
+#glmnet local auc score: 0.8847
 
 #Making prediction with glmnet model
 pred_test_prob <- predict(glmnet_model, test[,-1], type = 'prob')
@@ -41,6 +41,7 @@ p1 <- qplot(pred_test_prob$Y, geom = 'density') +
   ggtitle('Density of predictions')
 p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
 
+
 p <- grid.arrange(p2, p1, ncol = 2)
 ggsave(filename = 'plots/glmnet_predict.jpeg', plot = p, device = 'jpeg')
 
@@ -48,46 +49,20 @@ submission$target <- pred_test_prob$Y
 
 write_csv(submission, 'results/caret_glm.csv')
 
-#Radial SVM
-plan(multiprocess)
-time1 <- Sys.time()
-rsvm_model <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC', data = train[,-1],
-                    trControl = control, tuneLength = 10)
-Sys.time() - time1
-rsvm_model
-plot(rsvm_model)
-rsvm_model$bestTune
-rsvm_model$results$ROC[31]
-#Radial SVM local auc score: 0.8888
-
-#Predicting with Radial SVM
-pred_test_prob <- predict(rsvm_model, test[,-1], type = 'prob')
-
-#Plot histogram and density of predicted probabilities
-p1 <- qplot(pred_test_prob$Y, geom = 'density') + 
-  ggtitle('Density of predictions')
-p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
-
-p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'plots/rsvm_predict.jpeg', plot = p, device = 'jpeg')
-
-submission$target <- pred_test_prob$Y
-
-write_csv(submission, 'results/caret_rsvm.csv')
-
-#Linear SVM 0.
-lsvm_tune <- expand.grid(cost=seq(0,1,by=0.05),weight=seq(0,1,by=0.1))
+#Linear SVM 
+lsvm_tune <- expand.grid(cost = seq(0, 1, by = 0.05), weight = seq(0, 1, by = 0.1))
 
 plan(multiprocess)
 time1 <- Sys.time()
 lsvm_model <- train(target ~ ., method = 'svmLinearWeights', metric = 'ROC', data = train[,-1],
-                   trControl = control, tuneGrid = lsvm_tune)
+                   trControl = control,
+                   tuneGrid = lsvm_tune)
 Sys.time() - time1
 lsvm_model
 plot(lsvm_model)
 lsvm_model$bestTune
-lsvm_model$results$ROC[169]
-#Linear SVM local auc score : 0.8791
+lsvm_model$results$ROC[160]
+#Linear SVM local auc score : 0.8664202
 
 #Predicting with Linear SVM
 pred_test_prob <- predict(lsvm_model, test[,-1], type = 'prob')
