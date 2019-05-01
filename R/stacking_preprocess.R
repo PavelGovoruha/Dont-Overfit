@@ -17,10 +17,10 @@ control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
 #Create new train and test set which used in ensembling
 train_meta <- train %>%
   mutate(pda_ = NA,
-         rsvm_ = NA)
+         lsvm_ = NA)
 test_meta <- test %>%
   mutate(pda_ = NA,
-         rsvm_ = NA)
+         lsvm_ = NA)
 #Check datasets
 glimpse(train_meta)
 glimpse(test_meta)
@@ -33,9 +33,8 @@ folds_indexes
 
 #Set tune parameters for glmnet and linear svm
 tune_pda <- expand.grid(lambda = seq(from = 0, to = 2, by = 0.01))
-tune_svm <- expand.grid(C = seq(from = 0, to = 1, by = 0.25),
-                        Weight = c(0, 0.36, 0.64, 1),
-                        sigma = 0.04281106)
+tune_svm <- expand.grid(cost = seq(from = 0, to = 1, by = 0.01),
+                        weight = 0.12)
 
 #Fill column pda_ in train meta
 for(j in 1:5){
@@ -53,15 +52,15 @@ summary(train_meta$pda_)
 #Fill column lsvm_ in train meta
 for(j in 1:5){
   temp_svm <- train(target ~ ., data = train[-folds_indexes[[j]], -1], 
-                       method = 'svmRadialWeights', metric = 'ROC',
+                       method = 'svmLinearWeights', metric = 'ROC',
                        trControl = control, tuneGrid = tune_svm,
                        preProcess = c('center', 'scale'))
   pred <- predict(temp_svm, train[folds_indexes[[j]],-1], type = 'prob')
-  train_meta$rsvm_[folds_indexes[[j]]] <- pred$Y
+  train_meta$lsvm_[folds_indexes[[j]]] <- pred$Y
 }
 
-#Check rsvm_ column
-summary(train_meta$rsvm_)
+#Check lsvm_ column
+summary(train_meta$lsvm_)
 
 #Save meta train dataset
 train_meta %>% write_rds('data/train_meta.rds')
@@ -76,7 +75,7 @@ test_meta$pda_ <- pred_pda$Y
 
 summary(test_meta$pda_)
 
-svm_model <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC', 
+svm_model <- train(target ~ ., method = 'svmLinearWeights', metric = 'ROC', 
                     data = train[,-1],
                     trControl = control,
                     tuneGrid = tune_svm,
@@ -84,9 +83,12 @@ svm_model <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC',
 
 pred_svm <- predict(svm_model, test[,-1], type = 'prob')
 
-test_meta$rsvm_ <- pred_svm$Y
+test_meta$lsvm_ <- pred_svm$Y
 
-summary(test_meta$rsvm_)
+summary(test_meta$lsvm_)
 
 #Save meta test dataset
 test_meta %>% write_rds('data/test_meta.rds')
+
+#Save folds
+folds_indexes %>% write_rds('data/folds_indexes.rds')
