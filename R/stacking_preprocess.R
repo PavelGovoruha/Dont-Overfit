@@ -1,9 +1,6 @@
 #Load libraries
 library(tidyverse)
 library(caret)
-library(future)
-library(ggplot2)
-library(gridExtra)
 
 #Load data with selected variables
 train <- read_rds('data/train_new.rds')
@@ -19,11 +16,11 @@ control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
 
 #Create new train and test set which used in ensembling
 train_meta <- train %>%
-  mutate(glmnet_ = NA,
-         lsvm_ = NA)
+  mutate(pda_ = NA,
+         rsvm_ = NA)
 test_meta <- test %>%
-  mutate(glmnet_ = NA,
-         lsvm_ = NA)
+  mutate(pda_ = NA,
+         rsvm_ = NA)
 #Check datasets
 glimpse(train_meta)
 glimpse(test_meta)
@@ -35,48 +32,61 @@ folds_indexes <- createFolds(y = train$target, k = 5)
 folds_indexes
 
 #Set tune parameters for glmnet and linear svm
-tune_glm <- expand.grid(lambda = seq(from = 0, to = 1, by = 0.01), alpha = 0)
-lsvm_tune <- expand.grid(cost = seq(0, 1, by = 0.05), weight = seq(0, 1, by = 0.1))
+tune_pda <- expand.grid(lambda = seq(from = 0, to = 2, by = 0.01))
+tune_svm <- expand.grid(C = seq(from = 0, to = 1, by = 0.25),
+                        Weight = c(0, 0.36, 0.64, 1),
+                        sigma = 0.04281106)
 
-#Fill column glmnet_ in train meta
+#Fill column pda_ in train meta
 for(j in 1:5){
-  temp_glmnet <- train(target ~ ., data = train[-folds_indexes[[j]], -1], 
-                       method = 'glmnet', metric = 'ROC',
-                       trControl = control, tuneGrid = tune_glm)
-  pred <- predict(temp_glmnet, train[folds_indexes[[j]],-1], type = 'prob')
-  train_meta$glmnet_[folds_indexes[[j]]] <- pred$Y
+  temp_pda <- train(target ~ ., data = train[-folds_indexes[[j]], -1], 
+                       method = 'pda', metric = 'ROC',
+                       trControl = control, tuneGrid = tune_pda,
+                       preProcess = 'scale')
+  pred <- predict(temp_pda, train[folds_indexes[[j]],-1], type = 'prob')
+  train_meta$pda_[folds_indexes[[j]]] <- pred$Y
 }
+
+#Check pda_ column
+summary(train_meta$pda_)
 
 #Fill column lsvm_ in train meta
 for(j in 1:5){
-  temp_lsvm <- train(target ~ ., data = train[-folds_indexes[[j]], -1], 
-                       method = 'svmLinearWeights', metric = 'ROC',
-                       trControl = control, tuneGrid = lsvm_tune,
-                       preProcess = 'center')
-  pred <- predict(temp_lsvm, train[folds_indexes[[j]],-1], type = 'prob')
-  train_meta$lsvm_[folds_indexes[[j]]] <- pred$Y
+  temp_svm <- train(target ~ ., data = train[-folds_indexes[[j]], -1], 
+                       method = 'svmRadialWeights', metric = 'ROC',
+                       trControl = control, tuneGrid = tune_svm,
+                       preProcess = c('center', 'scale'))
+  pred <- predict(temp_svm, train[folds_indexes[[j]],-1], type = 'prob')
+  train_meta$rsvm_[folds_indexes[[j]]] <- pred$Y
 }
+
+#Check rsvm_ column
+summary(train_meta$rsvm_)
 
 #Save meta train dataset
 train_meta %>% write_rds('data/train_meta.rds')
 
 #Train models on full train dataset and make predictions for test
-glmnet_model <- train(target ~ ., method = 'glmnet', metric = 'ROC', data = train[,-1], 
-                      trControl = control, tuneGrid = tune_glm)
+pda_model <- train(target ~ ., method = 'pda', metric = 'ROC', data = train[,-1], 
+                      trControl = control, tuneGrid = tune_pda,
+                   preProcess = 'scale')
 
-pred_glm <- predict(glmnet_model, test[,-1], type = 'prob')
-test_meta$glmnet_ <- pred_glm$Y
+pred_pda <- predict(pda_model, test[,-1], type = 'prob')
+test_meta$pda_ <- pred_pda$Y
 
-lsvm_model <- train(target ~ ., method = 'svmLinearWeights', metric = 'ROC', data = train[,-1],
+summary(test_meta$pda_)
+
+svm_model <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC', 
+                    data = train[,-1],
                     trControl = control,
-                    tuneGrid = lsvm_tune,
-                    preProcess = 'center')
+                    tuneGrid = tune_svm,
+                    preProcess = c('center', 'scale'))
 
-pred_lsvm <- predict(lsvm_model, test[,-1], type = 'prob')
-test_meta$lsvm_ <- pred_lsvm$Y
+pred_svm <- predict(svm_model, test[,-1], type = 'prob')
+
+test_meta$rsvm_ <- pred_svm$Y
+
+summary(test_meta$rsvm_)
 
 #Save meta test dataset
 test_meta %>% write_rds('data/test_meta.rds')
-
-#Save folds indexes
-folds_indexes %>% write_rds('data/folds_indexes.rds')

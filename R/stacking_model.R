@@ -2,8 +2,6 @@
 library(tidyverse)
 library(caret)
 library(future)
-library(ggplot2)
-library(gridExtra)
 
 #Load data
 train <- read_rds('data/train_meta.rds')
@@ -14,33 +12,28 @@ submission <- read_csv('data/sample_submission.csv')
 glimpse(train)
 glimpse(test)
 
-#Set caret control parameters
-control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
-                                   classProbs = TRUE, summaryFunction = twoClassSummary, 
-                                   returnResamp = 'final', allowParallel = TRUE)
+#Set random seed
+set.seed(1234)
 
-bayes_glm <- train(target ~ ., method = 'bayesglm', data = train[,-1],
-                   metric = 'ROC',
-                   trControl = control)
-bayes_glm
+#Set grid
+control <- trainControl(method = 'boot', number = 25,
+                        savePredictions = 'final',
+                        classProbs = TRUE, summaryFunction = twoClassSummary, 
+                        returnResamp = 'final', allowParallel = TRUE)
 
-svmRadial <- train(target ~ ., method = 'svmRadialWeights', metric = 'ROC',
-                   data = train[,-1], trControl = control,
-                   tuneLength = 10, preProcess = 'center')
-svmRadial
+#Train baysglm
+plan(multiprocess)
+time1 <- Sys.time()
+model_bayesglm <- train(target ~ rsvm_ + pda_, method = 'bayesglm', 
+                        data = train[,-1], metric = 'ROC', 
+                        trControl = control)
+Sys.time() - time1
+
+model_bayesglm
 
 #Predict with bayes glm
-pred <- predict(bayes_glm, test[,-1], type = 'prob')
-prob_bayes_glm <- pred$Y
-summary(prob_bayes_glm)
-submission$target <- prob_bayes_glm
+pred <- predict(model_bayesglm, test[,-1], type = 'prob')
 
-submission %>% write_csv('results/stack_bayes.csv')
+submission$target <- pred$Y
 
-#Predict with Radial SVM
-pred <- predict(svmRadial, test[,-1], type = 'prob')
-prob_rsvm <- pred$Y
-summary(prob_rsvm)
-submission$target <- prob_rsvm
-
-submission %>% write_csv('results/stack_rsvm.csv')
+submission %>% write_csv('results/bayes_stack.csv')

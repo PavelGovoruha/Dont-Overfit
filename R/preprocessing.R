@@ -83,23 +83,23 @@ getSelectedAttributes(boruta_selection, withTentative = FALSE)
 
 boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = FALSE)
 
-#Add mean per row
+#Add mean and positive ratio
+train$pos_ratio_ <- apply(train[,-c(1,2)], 1, 
+                          function(x){mean(x > 0)})
+
+test$pos_ratio_ <- apply(test[,-1], 1, 
+                          function(x){mean(x > 0)})
+
 train$mean_ <- apply(train[,-c(1,2)], 1, mean)
-test$mean_ <- apply(test[,-1], 1, mean)
-
-#Scale data
-scaled_train <- scale(train[,-c(1,2)])
-scaled_test <- scale(test[,-1])
-
-train[,-c(1,2)] <- scaled_train
-test[,-1] <- scaled_test
+test$mean_ <- apply(test[,-c(1,2)], 1, mean)
 
 #Create list of selected predictors
-variables <- c("mean_","v33",  "v65",  "v117", "v217",  
+variables <- c("pos_ratio_","mean_","v33",  "v65",  "v117", "v217",  
                "v39", "v91",  "v295", "v189", "v16","v228","v268","v73",
                "v237","v199","v201")
 
 variables
+
 
 #Save selected variables
 train_new <- train %>% select(id, target, variables)

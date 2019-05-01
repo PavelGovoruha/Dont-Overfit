@@ -1,8 +1,6 @@
 library(tidyverse)
 library(caret)
 library(future)
-library(ggplot2)
-library(gridExtra)
 
 #Load train and test datasets with selected variables
 train <- read_rds('data/train_new.rds')
@@ -17,64 +15,58 @@ control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
                         classProbs = TRUE, summaryFunction = twoClassSummary, 
                         returnResamp = 'final', allowParallel = TRUE)
 
-#glmnet model
-tune_glm <- expand.grid(lambda = seq(from = 0, to = 1, by = 0.01), alpha = 0)
+#Define tune grid for pda
+tune_pda <- expand.grid(lambda = seq(from = 0, to = 2, by = 0.01))
 
+#Train pda model
 plan(multiprocess)
 time1 <- Sys.time()
-glmnet_model <- train(target ~ ., method = 'glmnet', metric = 'ROC', data = train[,-1], 
-                      trControl = control, tuneGrid = tune_glm)
-Sys.time() - time1
-
-glmnet_model
-plot(glmnet_model)
-glmnet_model$bestTune
-glmnet_model$results$ROC[6]
-
-#glmnet local auc score: 0.8847
-
-#Making prediction with glmnet model
-pred_test_prob <- predict(glmnet_model, test[,-1], type = 'prob')
-
-#Plot histogram and density of predicted probabilities
-p1 <- qplot(pred_test_prob$Y, geom = 'density') + 
-  ggtitle('Density of predictions')
-p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
-
-
-p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'plots/glmnet_predict.jpeg', plot = p, device = 'jpeg')
-
-submission$target <- pred_test_prob$Y
-
-write_csv(submission, 'results/caret_glm.csv')
-
-#Linear SVM 
-lsvm_tune <- expand.grid(cost = seq(0, 1, by = 0.05), weight = seq(0, 1, by = 0.1))
-
-plan(multiprocess)
-time1 <- Sys.time()
-lsvm_model <- train(target ~ ., method = 'svmLinearWeights', metric = 'ROC', data = train[,-1],
+pda_model <- train(target ~ ., data = train[,-1], method = 'pda',
+                   metric = 'ROC',
                    trControl = control,
-                   tuneGrid = lsvm_tune)
+                   tuneGrid = tune_pda,
+                   preProcess = 'scale')
 Sys.time() - time1
-lsvm_model
-plot(lsvm_model)
-lsvm_model$bestTune
-lsvm_model$results$ROC[160]
-#Linear SVM local auc score : 0.8664202
 
-#Predicting with Linear SVM
-pred_test_prob <- predict(lsvm_model, test[,-1], type = 'prob')
+plot(pda_model)
 
-#Plot histogram and density of predicted probabilities
-p1 <- qplot(pred_test_prob$Y, geom = 'density') + 
-  ggtitle('Density of predictions')
-p2 <- qplot(pred_test_prob$Y, geom = 'histogram') + ggtitle('Histogram of predictions')
+#Best parameters
+pda_model$bestTune
 
-p <- grid.arrange(p2, p1, ncol = 2)
-ggsave(filename = 'plots/lsvm_predict.jpeg', plot = p, device = 'jpeg')
+#Best local auc
+max(pda_model$results$ROC)
 
-submission$target <- pred_test_prob$Y
+#Make prediction with pda
+pred_prob_pda <- predict(pda_model, test[,-1], type = 'prob')
+submission$target <- pred_prob_pda$Y
 
-write_csv(submission, 'results/caret_lsvm.csv')
+submission %>% write_csv('results/caret_pda.csv')
+
+#Define tune grid for radial svm with weights
+tune_svm <- expand.grid(cost = seq(from = 0, to = 1, by = 0.01),
+                                   weight = 0.12)
+#train svm model
+plan(multiprocess)
+time1 <- Sys.time()
+svm_model <- train(target ~ ., data = train[,-1],
+                   method = 'svmLinearWeights',
+                   metric = 'ROC',
+                   trControl = control,
+                   tuneGrid = tune_svm,
+                   preProcess = c('center', 'scale'))
+Sys.time() - time1
+
+#Plot svm model
+plot(svm_model)
+
+#Best parameters
+svm_model$bestTune
+
+#Best local auc
+max(svm_model$results$ROC)
+
+#Make predictions with svm
+pred_prob_svm <- predict(svm_model, test[,-1], type = 'prob')
+submission$target <- pred_prob_svm$Y
+
+submission %>% write_csv('results/caret_lsvm.csv')
