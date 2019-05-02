@@ -32,8 +32,8 @@ folds_indexes <- createFolds(y = train$target, k = 5)
 folds_indexes
 
 #Set tune parameters for glmnet and linear svm
-tune_pda <- expand.grid(lambda = seq(from = 0, to = 2, by = 0.01))
-tune_svm <- expand.grid(cost = seq(from = 0, to = 1, by = 0.01),
+tune_pda <- expand.grid(lambda = 0.99)
+tune_svm <- expand.grid(cost = 0.03,
                         weight = 0.12)
 
 #Fill column pda_ in train meta

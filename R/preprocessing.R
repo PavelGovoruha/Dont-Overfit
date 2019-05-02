@@ -27,7 +27,7 @@ plan(multiprocess)
 set.seed(1234)
 ctrl_rfFuncs <- rfeControl(functions = rfFuncs ,
                    method = "boot",
-                   number = 100,
+                   number = 25,
                    verbose = FALSE,
                    allowParallel = TRUE,
                    rerank = TRUE,
@@ -50,7 +50,7 @@ rfe_rf_selection
 ctrl_nb<- rfeControl(
   functions = nbFuncs,
   method = "boot",
-  number = 100,
+  number = 25,
   verbose = FALSE,
   allowParallel = TRUE,
   rerank = TRUE,
@@ -66,11 +66,14 @@ vars_nb <- rfe(x = train[,-c(1,2)], y = train$target, metric = 'ROC',
 Sys.time() - time1
 
 vars_nb
+
+selectetion_nb <- predictors(vars_nb)
 plot(vars_nb)
 
 #Use Boruta to select variables
 time1 <- Sys.time()
-boruta_selection <- Boruta(x = train[,-c(1,2)], y = train$target, doTrace = 3, maxRuns = 500)
+boruta_selection <- Boruta(x = train[,-c(1,2)], y = train$target, doTrace = 3, 
+                           maxRuns = 500)
 Sys.time() - time1
 
 boruta_selection
@@ -81,7 +84,7 @@ getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
 getSelectedAttributes(boruta_selection, withTentative = FALSE)
 
-boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = FALSE)
+boruta_selection <-getSelectedAttributes(boruta_selection, withTentative = TRUE)
 
 #Add mean and positive ratio
 train$pos_ratio_ <- apply(train[,-c(1,2)], 1, 
@@ -94,12 +97,19 @@ train$mean_ <- apply(train[,-c(1,2)], 1, mean)
 test$mean_ <- apply(test[,-c(1,2)], 1, mean)
 
 #Create list of selected predictors
+selectetion_nb
+boruta_selection
+rfe_rf_selection
+
+#"maxmin","pos_ratio_","mean_","v33",  "v65",  "v117", "v217",  
+#               "v39", "v91",  "v295", "v189", "v16","v228","v268","v73",
+#               "v237","v199","v201")
+
 variables <- c("pos_ratio_","mean_","v33",  "v65",  "v117", "v217",  
                "v39", "v91",  "v295", "v189", "v16","v228","v268","v73",
                "v237","v199","v201")
 
-variables
-
+length(variables)
 
 #Save selected variables
 train_new <- train %>% select(id, target, variables)

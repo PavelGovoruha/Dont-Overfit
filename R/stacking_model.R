@@ -37,49 +37,25 @@ result_avg <- foreach(p1 = p, .combine = bind_rows) %dopar% {
    }
    res
 }
+
 result_avg
+
 res_avg <- result_avg %>%
-  group_by(p_) %>%
-  summarise(mean_auc = mean(auc_)) %>%
-  arrange(desc(mean_auc))
-
-#Use cross validation to select best p for weighted average predictions
-result_geommean <- foreach(p1 = p, .combine = bind_rows) %dopar% {
-  res <- foreach(j = 1:5, .combine = bind_rows) %dopar% {
-    temp_ <- (pda_[folds[[j]]])^(1/p1) * (lsvm_[folds[[j]]])^(1/(1 - p1))
-    auc_score <- AUC(y_pred = temp_, y_true = target[folds[[j]]])
-    data.frame(p_ = p1, auc_ = auc_score)
-  }
-  res
-}
-result_geommean
-res_geom <- result_geommean %>%
-  group_by(p_) %>%
-  summarise(mean_auc = mean(auc_)) %>%
-  arrange(desc(mean_auc))
-
-#Use cross validation to select best p for weighted harmonic mean
-result_harm <- foreach(p1 = p, .combine = bind_rows) %dopar% {
-  res <- foreach(j = 1:5, .combine = bind_rows) %dopar% {
-    temp_ <- (p1 + (1 - p1)) / (p1/pda_[folds[[j]]] + (1 - p1)/lsvm_[folds[[j]]]) 
-    auc_score <- AUC(y_pred = temp_, y_true = target[folds[[j]]])
-    data.frame(p_ = p1, auc_ = auc_score)
-  }
-  res
-}
-result_harm
-res_harm <- result_harm %>%
   group_by(p_) %>%
   summarise(mean_auc = mean(auc_)) %>%
   arrange(desc(mean_auc))
 
 #Exploring results
 summary(res_avg$mean_auc)
-summary(res_geom$mean_auc)
-summary(res_harm$mean_auc)
+ggplot(res_avg, aes(x = mean_auc)) + geom_density()
+median(res_avg$mean_auc)
+sd(res_avg$mean_auc)
+
+which(res_avg$mean_auc == median(res_avg$mean_auc))
+res_avg[51,]
 
 #Make weighted average prediction
-pred_avg <- 0.47 * test$pda_ + (1 - 0.47) * test$lsvm_
+pred_avg <- 0.19 * test$pda_ + (1 - 0.19) * test$lsvm_
 summary(pred_avg)
 
 #Submit prediction

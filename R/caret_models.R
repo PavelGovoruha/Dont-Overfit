@@ -16,9 +16,9 @@ control <- trainControl(method = 'boot', number = 25, savePredictions = 'final',
                         returnResamp = 'final', allowParallel = TRUE)
 
 #Define tune grid for pda
-tune_pda <- expand.grid(lambda = seq(from = 0, to = 2, by = 0.01))
+tune_pda <- expand.grid(lambda = seq(from = 0, to = 1, by = 0.01))
 
-#Train pda model
+#Train glmnet model
 plan(multiprocess)
 time1 <- Sys.time()
 pda_model <- train(target ~ ., data = train[,-1], method = 'pda',
@@ -30,7 +30,7 @@ Sys.time() - time1
 
 plot(pda_model)
 
-#Best parameters
+#Best parameters, lambda = 0.99
 pda_model$bestTune
 
 #Best local auc
@@ -59,7 +59,7 @@ Sys.time() - time1
 #Plot svm model
 plot(svm_model)
 
-#Best parameters
+#Best parameters cost = 0.03
 svm_model$bestTune
 
 #Best local auc
