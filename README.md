@@ -28,5 +28,3 @@ I build two models :
 Final step is taking weighted average of these models
 
 It gave public leaderboard score 0.861 and private leaderboard score 0.852
-
-I took 114 place of 2230 (top 5%).
