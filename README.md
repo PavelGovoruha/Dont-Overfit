@@ -1,4 +1,4 @@
-# Dont Overfit II#
+# Dont Overfit II
 https://www.kaggle.com/c/dont-overfit-ii/overview
 
 This is my solution for Kaggle Playground Competition 'Dont Overfit II' 
